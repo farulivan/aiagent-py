@@ -3,10 +3,12 @@ import argparse
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 def main():
     parser = argparse.ArgumentParser(description="AI Code Assistant")
     parser.add_argument("user_prompt", type=str, help="Prompt to send to Gemini")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
     load_dotenv()
@@ -15,9 +17,10 @@ def main():
         raise RuntimeError("GEMINI_API_KEY environment variable not set")
 
     client = genai.Client(api_key=api_key)
+    messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
     response = client.models.generate_content(
         model='gemini-2.5-flash', 
-        contents=args.user_prompt,
+        contents=messages,
     )
 
     if not response.usage_metadata:
@@ -26,8 +29,11 @@ def main():
     prompt_tokens = response.usage_metadata.prompt_token_count
     response_tokens = response.usage_metadata.candidates_token_count
 
-    print("Prompt tokens: ", prompt_tokens)
-    print("Response tokens: ", response_tokens)
+    if args.verbose:
+        print("User prompt: ", args.user_prompt)
+        print("Prompt tokens: ", prompt_tokens)
+        print("Response tokens: ", response_tokens)
+    
     print("Response:")
     print(response.text)
 
