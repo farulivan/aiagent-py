@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from call_function import available_functions
+from prompts import system_prompt
+
+
 def main():
     parser = argparse.ArgumentParser(description="AI Code Assistant")
     parser.add_argument("user_prompt", type=str, help="Prompt to send to Gemini")
@@ -21,6 +25,11 @@ def main():
     response = client.models.generate_content(
         model='gemini-2.5-flash', 
         contents=messages,
+        config=types.GenerateContentConfig(
+            tools=[available_functions],
+            system_instruction=system_prompt,
+            temperature=0,
+        )
     )
 
     if not response.usage_metadata:
@@ -34,8 +43,14 @@ def main():
         print("Prompt tokens: ", prompt_tokens)
         print("Response tokens: ", response_tokens)
     
-    print("Response:")
-    print(response.text)
+    if not response.function_calls:
+        print("Response:")
+        print(response.text)
+        return
+
+    for function_call in response.function_calls:
+        print(f"Calling function: {function_call.name}({function_call.args})")
+
 
 if __name__ == "__main__":
     main()
