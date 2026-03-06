@@ -48,8 +48,24 @@ def main():
         print(response.text)
         return
 
+    function_results = []
     for function_call in response.function_calls:
-        print(f"Calling function: {function_call.name}({function_call.args})")
+        function_call_result = call_function(function_call, verbose=args.verbose)
+
+        if not function_call_result.parts:
+            raise RuntimeError("Function call returned Content with empty parts list")
+
+        first_part = function_call_result.parts[0]
+        if first_part.function_response is None:
+            raise RuntimeError("Function call part has no FunctionResponse")
+
+        if first_part.function_response.response is None:
+            raise RuntimeError("FunctionResponse has no response payload")
+
+        function_results.append(first_part)
+
+        if args.verbose:
+            print(f"-> {first_part.function_response.response}")
 
 
 if __name__ == "__main__":
